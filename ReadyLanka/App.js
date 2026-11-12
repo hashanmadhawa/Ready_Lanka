@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { emergencies } from "./src/data/emergencies";
+import { emergencies, kitItems } from "./src/data/emergencies";
 
 const colors = {
   green: "#176B52",
@@ -18,6 +18,7 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [selectedGuide, setSelectedGuide] = useState(null);
   const [section, setSection] = useState("preparation");
+  const [checked, setChecked] = useState([]);
 
   const guides = useMemo(() => {
     const searchText = query.trim().toLowerCase();
@@ -39,6 +40,14 @@ export default function App() {
     setSelectedGuide(null);
   }
 
+  function toggleKitItem(id) {
+    setChecked((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
+    );
+  }
+
   if (selectedGuide) {
     return (
       <GuideDetail
@@ -58,13 +67,15 @@ export default function App() {
       <View style={styles.content}>
         {screen === "home" ? (
           <Home openGuides={() => setScreen("guides")} openGuide={openGuide} />
-        ) : (
+        ) : screen === "guides" ? (
           <Guides
             query={query}
             setQuery={setQuery}
             guides={guides}
             openGuide={openGuide}
           />
+        ) : (
+          <Kit checked={checked} toggle={toggleKitItem} />
         )}
       </View>
 
@@ -80,6 +91,12 @@ export default function App() {
           label="Guides"
           active={screen === "guides"}
           onPress={() => setScreen("guides")}
+        />
+        <NavButton
+          icon="▣"
+          label="Kit"
+          active={screen === "kit"}
+          onPress={() => setScreen("kit")}
         />
       </View>
     </View>
@@ -234,6 +251,52 @@ function GuideDetail({ item, section, setSection, onBack }) {
   );
 }
 
+function Kit({ checked, toggle }) {
+  const percent = Math.round((checked.length / kitItems.length) * 100);
+
+  return (
+    <ScrollView contentContainerStyle={styles.page}>
+      <SectionTitle
+        title="Emergency kit"
+        subtitle="Check the supplies your household may need."
+      />
+
+      <View style={styles.whiteCard}>
+        <View style={styles.rowBetween}>
+          <Text style={styles.cardTitle}>Preparation progress</Text>
+          <Text style={styles.percent}>{percent}%</Text>
+        </View>
+        <View style={styles.track}>
+          <View style={[styles.fill, { width: `${percent}%` }]} />
+        </View>
+        <Text style={styles.muted}>
+          {checked.length} of {kitItems.length} checked
+        </Text>
+      </View>
+
+      {kitItems.map((item) => {
+        const done = checked.includes(item.id);
+
+        return (
+          <Pressable key={item.id} style={styles.listCard} onPress={() => toggle(item.id)}>
+            <View style={[styles.checkbox, done && styles.checkboxDone]}>
+              {done && <Text style={styles.check}>✓</Text>}
+            </View>
+            <View style={styles.cardBody}>
+              <Text style={[styles.cardTitle, done && styles.strike]}>{item.name}</Text>
+              <Text style={styles.muted}>{item.detail}</Text>
+            </View>
+          </Pressable>
+        );
+      })}
+
+      <Text style={styles.note}>
+        This checklist is stored only in memory for this commit. Persistence will be added later.
+      </Text>
+    </ScrollView>
+  );
+}
+
 function SectionTitle({ title, subtitle }) {
   return (
     <View style={styles.sectionTitle}>
@@ -308,6 +371,14 @@ const styles = StyleSheet.create({
   segmentText: { color: colors.muted, fontSize: 12, fontWeight: "700" },
   segmentTextActive: { color: colors.white },
   whiteCard: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16 },
+  rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  percent: { color: colors.green, fontSize: 19, fontWeight: "900" },
+  track: { backgroundColor: "#E8EFEB", borderRadius: 8, height: 9, overflow: "hidden", marginVertical: 13 },
+  fill: { backgroundColor: colors.green, height: 9, borderRadius: 8 },
+  checkbox: { width: 25, height: 25, borderWidth: 1.5, borderColor: "#AAB9B1", borderRadius: 7, alignItems: "center", justifyContent: "center" },
+  checkboxDone: { backgroundColor: colors.green, borderColor: colors.green },
+  check: { color: colors.white, fontWeight: "900" },
+  strike: { color: colors.muted, textDecorationLine: "line-through" },
   sectionHeading: { color: colors.dark, fontSize: 17, fontWeight: "800", marginBottom: 14 },
   tip: { flexDirection: "row", marginBottom: 14, alignItems: "flex-start" },
   number: { backgroundColor: colors.pale, color: colors.green, borderRadius: 15, width: 28, height: 28, textAlign: "center", paddingTop: 5, fontWeight: "900", marginRight: 10 },
