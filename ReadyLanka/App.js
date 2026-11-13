@@ -19,6 +19,7 @@ export default function App() {
   const [selectedGuide, setSelectedGuide] = useState(null);
   const [section, setSection] = useState("preparation");
   const [checked, setChecked] = useState([]);
+  const [favorites, setFavorites] = useState([]);
 
   const guides = useMemo(() => {
     const searchText = query.trim().toLowerCase();
@@ -48,12 +49,22 @@ export default function App() {
     );
   }
 
+  function toggleFavorite(id) {
+    setFavorites((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
+    );
+  }
+
   if (selectedGuide) {
     return (
       <GuideDetail
         item={selectedGuide}
         section={section}
         setSection={setSection}
+        favorite={favorites.includes(selectedGuide.id)}
+        onFavorite={() => toggleFavorite(selectedGuide.id)}
         onBack={closeGuide}
       />
     );
@@ -74,8 +85,10 @@ export default function App() {
             guides={guides}
             openGuide={openGuide}
           />
-        ) : (
+        ) : screen === "kit" ? (
           <Kit checked={checked} toggle={toggleKitItem} />
+        ) : (
+          <Saved favorites={favorites} openGuide={openGuide} />
         )}
       </View>
 
@@ -97,6 +110,12 @@ export default function App() {
           label="Kit"
           active={screen === "kit"}
           onPress={() => setScreen("kit")}
+        />
+        <NavButton
+          icon="★"
+          label="Saved"
+          active={screen === "saved"}
+          onPress={() => setScreen("saved")}
         />
       </View>
     </View>
@@ -197,7 +216,7 @@ function Guides({ query, setQuery, guides, openGuide }) {
   );
 }
 
-function GuideDetail({ item, section, setSection, onBack }) {
+function GuideDetail({ item, section, setSection, favorite, onFavorite, onBack }) {
   const content = item[section];
 
   return (
@@ -213,6 +232,12 @@ function GuideDetail({ item, section, setSection, onBack }) {
           <Text style={styles.heroTitleSmall}>{item.title}</Text>
           <Text style={styles.heroText}>{item.summary}</Text>
         </View>
+
+        <Button
+          title={favorite ? "★  Saved guide" : "☆  Save guide"}
+          secondary
+          onPress={onFavorite}
+        />
 
         <View style={styles.segment}>
           {["preparation", "during", "after"].map((name) => (
@@ -297,6 +322,33 @@ function Kit({ checked, toggle }) {
   );
 }
 
+function Saved({ favorites, openGuide }) {
+  const saved = emergencies.filter((item) => favorites.includes(item.id));
+
+  return (
+    <ScrollView contentContainerStyle={styles.page}>
+      <SectionTitle
+        title="Saved guides"
+        subtitle="Your favorite guides are available in this session."
+      />
+      {saved.map((item) => (
+        <Pressable key={item.id} style={styles.listCard} onPress={() => openGuide(item)}>
+          <Text style={styles.emoji}>{item.emoji}</Text>
+          <View style={styles.cardBody}>
+            <Text style={styles.cardTitle}>{item.title}</Text>
+            <Text style={styles.muted}>{item.summary}</Text>
+          </View>
+          <Text style={styles.star}>★</Text>
+        </Pressable>
+      ))}
+      {saved.length === 0 && (
+        <Text style={styles.empty}>No saved guides yet. Open a guide and tap Save guide.</Text>
+      )}
+      <Text style={styles.note}>Favorites will be saved between app launches in a later commit.</Text>
+    </ScrollView>
+  );
+}
+
 function SectionTitle({ title, subtitle }) {
   return (
     <View style={styles.sectionTitle}>
@@ -306,10 +358,10 @@ function SectionTitle({ title, subtitle }) {
   );
 }
 
-function Button({ title, onPress }) {
+function Button({ title, onPress, secondary = false }) {
   return (
-    <Pressable onPress={onPress} style={styles.button}>
-      <Text style={styles.buttonText}>{title}</Text>
+    <Pressable onPress={onPress} style={[styles.button, secondary && styles.buttonSecondary]}>
+      <Text style={[styles.buttonText, secondary && styles.buttonSecondaryText]}>{title}</Text>
     </Pressable>
   );
 }
@@ -358,6 +410,8 @@ const styles = StyleSheet.create({
   meta: { color: colors.green, fontSize: 11, fontWeight: "800", marginTop: 6 },
   button: { backgroundColor: colors.green, borderRadius: 12, padding: 14, alignItems: "center" },
   buttonText: { color: colors.white, fontSize: 15, fontWeight: "800" },
+  buttonSecondary: { backgroundColor: colors.pale, marginBottom: 10 },
+  buttonSecondaryText: { color: colors.green },
   note: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 12, marginBottom: 18 },
   input: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 13, marginBottom: 16, color: colors.dark },
   listCard: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderRadius: 15, padding: 14, marginBottom: 10, flexDirection: "row", alignItems: "center", gap: 12 },
@@ -379,6 +433,7 @@ const styles = StyleSheet.create({
   checkboxDone: { backgroundColor: colors.green, borderColor: colors.green },
   check: { color: colors.white, fontWeight: "900" },
   strike: { color: colors.muted, textDecorationLine: "line-through" },
+  star: { color: "#E6A23C", fontSize: 22 },
   sectionHeading: { color: colors.dark, fontSize: 17, fontWeight: "800", marginBottom: 14 },
   tip: { flexDirection: "row", marginBottom: 14, alignItems: "flex-start" },
   number: { backgroundColor: colors.pale, color: colors.green, borderRadius: 15, width: 28, height: 28, textAlign: "center", paddingTop: 5, fontWeight: "900", marginRight: 10 },
