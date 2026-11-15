@@ -4,12 +4,17 @@
     "slug": "readylanka",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "scheme": "readylanka",
     "android": {
       "package": "com.student.readylanka"
     },
     "plugins": [
-      "expo-status-bar"
-    ]
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
   }
 }
